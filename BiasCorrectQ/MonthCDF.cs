@@ -23,21 +23,29 @@ class MonthCDF
         set;
     }
 
-    public MonthCDF(List<Point> points)
+    public MonthCDF(List<Point> points, int month)
     {
-        Month = points[0].Date.Month;
-
-        var values = new List<double> { };
-        foreach (Point pt in points)
-        {
-            values.Add(pt.Value);
-        }
+        var values = GetMonthlyData(points, month);
 
         List<double> sorted_values;
         List<double> cdf = Utils.ComputeCDF(values, out sorted_values);
 
+        Month = month;
         Probability = cdf;
         Flow = sorted_values;
+    }
+
+    private static List<double> GetMonthlyData(List<Point> data, int month)
+    {
+        var values = new List<double> { };
+        foreach (Point pt in data)
+        {
+            if (pt.Date.Month == month)
+            {
+                values.Add(pt.Value);
+            }
+        }
+        return values;
     }
 
 } //namespace

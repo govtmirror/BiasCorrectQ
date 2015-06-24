@@ -192,8 +192,13 @@ class Program
 
     private static List<Point> DoMonthlyBiasCorrection(List<Point> obs, List<Point> sim)
     {
-        List<MonthCDF> obs_dist = GetMonthlyCDFs(obs);
-        List<MonthCDF> sim_dist = GetMonthlyCDFs(sim);
+        var obs_dist = new List<MonthCDF> { };
+        var sim_dist = new List<MonthCDF> { };
+        for (int i = 1; i <= 12; i++) //calender year list
+        {
+            obs_dist.Add(new MonthCDF(obs, i));
+            sim_dist.Add(new MonthCDF(sim, i));
+        }
 
         var rval = new List<Point> { };
         foreach (Point pt in sim)
@@ -277,36 +282,6 @@ class Program
             return (y1 + y2) / 2;
         }
         return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
-    }
-
-    private static List<MonthCDF> GetMonthlyCDFs(List<Point> data)
-    {
-        List<List<Point>> monthlyData = GetMonthlyData(data);
-
-        var rval = new List<MonthCDF> { };
-        for (int i = 0; i < monthlyData.Count; i++)
-        {
-            int month = i + 1;
-            rval.Add(new MonthCDF(monthlyData[i]));
-        }
-
-        return rval;
-    }
-
-    private static List<List<Point>> GetMonthlyData(List<Point> data)
-    {
-        var monthData = new List<List<Point>> { };
-        for (int i = 0; i < 12; i++)
-        {
-            monthData.Add(new List<Point> { });
-        }
-
-        foreach (Point pt in data)
-        {
-            monthData[pt.Date.Month - 1].Add(pt);
-        }
-
-        return monthData;
     }
 
     private static List<Point> GetInputData(string file, TextFormat fmt)
