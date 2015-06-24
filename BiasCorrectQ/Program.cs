@@ -355,14 +355,8 @@ class Program
     private static void WriteFile(List<Point> sim_new, string origname, TextFormat fmt)
     {
         string filename = Path.GetFileNameWithoutExtension(origname);
-        if (fmt == TextFormat.csv)
-        {
-            filename += ".HD.csv";
-        }
-        if (fmt == TextFormat.vic)
-        {
-            filename += ".HD.txt";
-        }
+        string ext = Path.GetExtension(origname);
+        filename += "_BC." + ext;
 
         string[] lines = new string[sim_new.Count];
         for (int i = 0; i < sim_new.Count; i++)
