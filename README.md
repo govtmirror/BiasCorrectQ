@@ -10,5 +10,5 @@ NOTE: This is BETA code! It works to bias correct simulated historical to observ
 * Extend the methods to bias correct future streamflow at equal monthly timesteps and periods of record.
 
 ###Wish List
-* Extend the methods to handle difference periods of record at a monthly timestep.
+* Extend the methods to handle different periods of record at a monthly timestep.
 * Extend the methods to handle daily timesteps.
