@@ -8,7 +8,7 @@ namespace BiasCorrectQ
 {
 class Program
 {
-    enum TextFormat
+    internal enum TextFormat
     {
         csv,
         vic
@@ -101,7 +101,7 @@ class Program
         Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" twice");
     }
 
-    private static List<Point> DoHDBiasCorrection(List<Point> observed,
+    internal static List<Point> DoHDBiasCorrection(List<Point> observed,
             List<Point> baseline, List<Point> future, bool biasbaseline)
     {
         List<Point> biasedFinal = new List<Point> { };
@@ -284,7 +284,7 @@ class Program
         return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
     }
 
-    private static List<Point> GetInputData(string file, TextFormat fmt)
+    internal static List<Point> GetInputData(string file, TextFormat fmt)
     {
         if (fmt == TextFormat.csv)
         {
