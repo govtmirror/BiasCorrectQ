@@ -8,7 +8,7 @@ namespace BiasCorrectQ
 {
 class Program
 {
-    enum OutFormat
+    enum TextFormat
     {
         csv,
         vic
@@ -16,64 +16,111 @@ class Program
 
     static void Main(string[] args)
     {
-        if (args.Length != 3)
+        if (args.Length != 5)
         {
-            Console.WriteLine("Usage:  HybridDeltaQ.exe  observed.month  baseline.month  future.month");
-            Console.WriteLine("    If running the baseline only enter \"baseline.month\" twice");
+            PrintUsage();
             return;
         }
 
         string observedFile = args[0];
         string baselineFile = args[1];
         string futureFile = args[2];
+        string informat = args[3];
+        string outformat = args[4];
 
+        //check input files exist
         if (!File.Exists(observedFile))
         {
             Console.WriteLine("error: file not found - " + observedFile);
             return;
         }
-
         if (!File.Exists(baselineFile))
         {
             Console.WriteLine("error: file not found - " + baselineFile);
             return;
         }
-
         if (!File.Exists(futureFile))
         {
             Console.WriteLine("error: file not found - " + futureFile);
             return;
         }
 
-        List<Point> observed = GetVicMonthly(observedFile);
-        List<Point> baseline = GetVicMonthly(baselineFile);
-        List<Point> future = GetVicMonthly(futureFile);
+        //check input/output format properly specified
+        if (informat != "csv" && informat != "vic")
+        {
+            PrintUsage();
+        }
+        if (outformat != "csv" && outformat != "vic")
+        {
+            PrintUsage();
+        }
+
+        //parse informat/outformat to TextFormat enum type
+        TextFormat infmt = (TextFormat)Enum.Parse(typeof(TextFormat), informat);
+        TextFormat outfmt = (TextFormat)Enum.Parse(typeof(TextFormat), outformat);
+
+        //get input data
+        List<Point> observed = GetInputData(observedFile, infmt);
+        List<Point> baseline = GetInputData(baselineFile, infmt);
+        List<Point> future = GetInputData(futureFile, infmt);
         if (observed.Count == 0 || baseline.Count == 0 || future.Count == 0)
         {
             Console.WriteLine("error parsing input files");
             return;
         }
 
-        List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future);
+        //do bias correction
+        bool biasbaseline = (baselineFile == futureFile);
+        List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future, biasbaseline);
 
+        //check bias correction was successful
         if (sim_biased.Count == 0)
         {
             Console.WriteLine("error computing bias corrected flow for:");
             Console.WriteLine("  observed: " + observedFile);
-            Console.WriteLine("  simulated: " + baselineFile);
+            Console.WriteLine("  baseline: " + baselineFile);
+            Console.WriteLine("  future: " + futureFile);
             return;
         }
-        WriteFile(sim_biased, futureFile, OutFormat.vic);
+
+        //write output
+        WriteFile(sim_biased, futureFile, outfmt);
+    }
+
+
+    private static void PrintUsage()
+    {
+        Console.WriteLine("Usage:  BiasCorrectQ.exe  observedFile  baselineFile  futureFile  informat  outformat");
+        Console.WriteLine("Where:");
+        Console.WriteLine("    observedFile - observed monthly data");
+        Console.WriteLine("    baselineFile - is the simulated historical data");
+        Console.WriteLine("    futureFile - is the simulated future data");
+        Console.WriteLine("    informat - either \"vic\" or \"csv\"");
+        Console.WriteLine("    outformat - either \"vic\" or \"csv\"");
+        Console.WriteLine();
+        Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" twice");
     }
 
     private static List<Point> DoHDBiasCorrection(List<Point> observed,
-            List<Point> baseline, List<Point> future)
+            List<Point> baseline, List<Point> future, bool biasbaseline)
     {
-        List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline);
-        List<Point> biasedAnnual = DoAnnualBiasCorrection(observed, baseline, biasedMonthly);
-        //List<Point> biasedFinal = DoHistoricalAdjustment(obs, sim, biasedAnnual);
+        List<Point> biasedFinal = new List<Point> { };
+        if (biasbaseline)
+        {
+            //bias correction for baseline or simulated historical
+            List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline);
+            biasedFinal = DoAnnualBiasCorrection(observed, baseline, biasedMonthly);
+        }
+        else
+        {
+            //not yet implemented, bias correct future streamflow
 
-        return biasedAnnual;
+            //List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline);
+            //List<Point> biasedAnnual = DoAnnualBiasCorrection(observed, baseline, biasedMonthly);
+            //List<Point> biasedFinal = DoHistoricalAdjustment(obs, sim, biasedAnnual);
+        }
+
+        return biasedFinal;
     }
 
     private static List<Point> DoHistoricalAdjustment(List<Point> obs,
@@ -262,6 +309,19 @@ class Program
         return monthData;
     }
 
+    private static List<Point> GetInputData(string file, TextFormat fmt)
+    {
+        if (fmt == TextFormat.csv)
+        {
+            return GetCsvData(file);
+        }
+        if (fmt == TextFormat.vic)
+        {
+            return GetVicMonthly(file);
+        }
+        return new List<Point> { };
+    }
+
     private static List<Point> GetVicMonthly(string filename)
     {
         var rval = new List<Point> { };
@@ -317,14 +377,14 @@ class Program
         return rval;
     }
 
-    private static void WriteFile(List<Point> sim_new, string origname, OutFormat fmt)
+    private static void WriteFile(List<Point> sim_new, string origname, TextFormat fmt)
     {
         string filename = Path.GetFileNameWithoutExtension(origname);
-        if (fmt == OutFormat.csv)
+        if (fmt == TextFormat.csv)
         {
             filename += ".HD.csv";
         }
-        if (fmt == OutFormat.vic)
+        if (fmt == TextFormat.vic)
         {
             filename += ".HD.txt";
         }
@@ -334,11 +394,11 @@ class Program
         {
             Point pt = sim_new[i];
 
-            if (fmt == OutFormat.vic)
+            if (fmt == TextFormat.vic)
             {
                 lines[i] = string.Format("{0} {1} {2}", pt.Date.Year, pt.Date.Month, pt.Value);
             }
-            if (fmt == OutFormat.csv)
+            if (fmt == TextFormat.csv)
             {
                 lines[i] = string.Format("{0},{1}", pt.Date, pt.Value);
             }
