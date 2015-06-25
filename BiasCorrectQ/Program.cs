@@ -92,13 +92,12 @@ class Program
     {
         Console.WriteLine("Usage:  BiasCorrectQ.exe  observedFile  baselineFile  futureFile  informat  outformat");
         Console.WriteLine("Where:");
-        Console.WriteLine("    observedFile - observed monthly data");
-        Console.WriteLine("    baselineFile - is the simulated historical data");
-        Console.WriteLine("    futureFile - is the simulated future data");
-        Console.WriteLine("    informat - either \"vic\" or \"csv\"");
-        Console.WriteLine("    outformat - either \"vic\" or \"csv\"");
+        Console.WriteLine("    observedFile - observed monthly streamflow");
+        Console.WriteLine("    baselineFile - simulated historical monthly streamflow");
+        Console.WriteLine("    futureFile - simulated future monthly streamflow");
+        Console.WriteLine("    informat/outformat - either \"vic\" or \"csv\"");
         Console.WriteLine();
-        Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" twice");
+        Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" as the \"futureFile\"");
     }
 
     internal static List<Point> DoHDBiasCorrection(List<Point> observed,
