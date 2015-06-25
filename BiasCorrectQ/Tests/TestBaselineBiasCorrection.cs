@@ -15,7 +15,7 @@ class TestBaselineBiasCorrection
     [Test]
     public void BaselineBiasCorrection()
     {
-        TestContext tc = TestContext.CurrentContext;
+        string projDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
 
         var known = new List<Point> { };
         known.Add(new Point(new DateTime(1980, 1, 1), 1558.60653838043));
@@ -31,10 +31,10 @@ class TestBaselineBiasCorrection
         known.Add(new Point(new DateTime(1980, 11, 1), 927.004861281717));
         known.Add(new Point(new DateTime(1980, 12, 1), 1206.36404064692));
 
-        string observedFile = Path.Combine(tc.TestDirectory, @"..\..\Tests\TestData\BOISE_Observations.txt");
+        string observedFile = Path.Combine(projDir, @"Tests\TestData\BOISE_Observations.txt");
         List<Point> observed = BiasCorrectQ.Program.GetInputData(observedFile, BiasCorrectQ.Program.TextFormat.vic);
 
-        string baselineFile = Path.Combine(tc.TestDirectory, @"..\..\Tests\TestData\BOISE_Baseline.month");
+        string baselineFile = Path.Combine(projDir, @"Tests\TestData\BOISE_Baseline.month");
         List<Point> baseline = BiasCorrectQ.Program.GetInputData(baselineFile, BiasCorrectQ.Program.TextFormat.vic);
 
         List<Point> sim_biased = BiasCorrectQ.Program.DoHDBiasCorrection(observed, baseline, baseline, true);
@@ -45,5 +45,5 @@ class TestBaselineBiasCorrection
         }
     }
 
-}
-}
+} //namespace
+} //class
