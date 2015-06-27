@@ -69,11 +69,6 @@ class Program
             return;
         }
 
-        //truncate inputs to water year data
-        Utils.TruncateToWYs(observed);
-        Utils.TruncateToWYs(baseline);
-        Utils.TruncateToWYs(future);
-
         //do bias correction
         bool biasbaseline = (baselineFile == futureFile);
         List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future, biasbaseline);
@@ -107,6 +102,11 @@ class Program
     internal static List<Point> DoHDBiasCorrection(List<Point> observed,
             List<Point> baseline, List<Point> future, bool biasbaseline)
     {
+        //truncate inputs to water year data
+        Utils.TruncateToWYs(observed);
+        Utils.TruncateToWYs(baseline);
+        Utils.TruncateToWYs(future);
+
         List<Point> biasedFinal = new List<Point> { };
         if (biasbaseline)
         {

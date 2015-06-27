@@ -102,6 +102,34 @@ static class Utils
         return values;
     }
 
+    internal static List<Point> GetMeanSummaryHydrograph(List<Point> flow)
+    {
+        var rval = new List<Point> { };
+
+        //initial new list to hold monthly values, index = month -1
+        var monthData = new List<List<double>> { };
+        for (int i = 0; i < 12; i++)
+        {
+            monthData.Add(new List<double> { });
+        }
+
+        //add monthly data
+        foreach (var pt in flow)
+        {
+            monthData[pt.Date.Month - 1].Add(pt.Value);
+        }
+
+        //fill in rval with mean of month values, arbitrary dates of 10/1/1999 - 9/1/2000
+        int[] wy_months = { 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        foreach (var month in wy_months)
+        {
+            int year = (month > 9) ? 1999 : 2000;
+            rval.Add(new Point(new DateTime(year, month, 1), monthData[month - 1].Average()));
+        }
+
+        return rval;
+    }
+
     internal static void TruncateToWYs(List<Point> data)
     {
         //truncate beginning of data until October is found

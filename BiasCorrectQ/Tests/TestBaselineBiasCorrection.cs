@@ -17,31 +17,34 @@ class TestBaselineBiasCorrection
     {
         string projDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
 
-        var known = new List<Point> { };
-        known.Add(new Point(new DateTime(1980, 1, 1), 1558.60653838043));
-        known.Add(new Point(new DateTime(1980, 2, 1), 2739.17117429521));
-        known.Add(new Point(new DateTime(1980, 3, 1), 3176.06796880605));
-        known.Add(new Point(new DateTime(1980, 4, 1), 9015.36011422707));
-        known.Add(new Point(new DateTime(1980, 5, 1), 11203.3915049319));
-        known.Add(new Point(new DateTime(1980, 6, 1), 3204.68918343077));
-        known.Add(new Point(new DateTime(1980, 7, 1), 1598.75686199482));
-        known.Add(new Point(new DateTime(1980, 8, 1), 781.641340244064));
-        known.Add(new Point(new DateTime(1980, 9, 1), 964.494621283109));
-        known.Add(new Point(new DateTime(1980, 10, 1), 707.951790477888));
-        known.Add(new Point(new DateTime(1980, 11, 1), 927.004861281717));
-        known.Add(new Point(new DateTime(1980, 12, 1), 1206.36404064692));
+        var knownMonthlyMeans = new List<Point> { };
+        knownMonthlyMeans.Add(new Point(new DateTime(1999, 10, 1), 822.1));
+        knownMonthlyMeans.Add(new Point(new DateTime(1999, 11, 1), 975.4));
+        knownMonthlyMeans.Add(new Point(new DateTime(1999, 12, 1), 1037.1));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 1, 1), 1179.4));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 2, 1), 1535.6));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 3, 1), 2837.8));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 4, 1), 5175.7));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 5, 1), 7848.2));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 6, 1), 6066.1));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 7, 1), 2175.7));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 8, 1), 962.2));
+        knownMonthlyMeans.Add(new Point(new DateTime(2000, 9, 1), 832.3));
 
+        //get input data
         string observedFile = Path.Combine(projDir, @"Tests\TestData\BOISE_Observations.txt");
-        List<Point> observed = BiasCorrectQ.Program.GetInputData(observedFile, BiasCorrectQ.Program.TextFormat.vic);
-
         string baselineFile = Path.Combine(projDir, @"Tests\TestData\BOISE_Baseline.month");
+        List<Point> observed = BiasCorrectQ.Program.GetInputData(observedFile, BiasCorrectQ.Program.TextFormat.vic);
         List<Point> baseline = BiasCorrectQ.Program.GetInputData(baselineFile, BiasCorrectQ.Program.TextFormat.vic);
 
+        //do bias correction
         List<Point> sim_biased = BiasCorrectQ.Program.DoHDBiasCorrection(observed, baseline, baseline, true);
 
-        for (int i = 0; i < known.Count; i++)
+        //get monthly means and check against accepted correct results
+        List<Point> monthlyMeans = Utils.GetMeanSummaryHydrograph(sim_biased);
+        for (int i = 0; i < knownMonthlyMeans.Count; i++)
         {
-            Assert.AreEqual(Math.Round(known[i].Value, 2), Math.Round(sim_biased[i].Value, 2));
+            Assert.AreEqual(knownMonthlyMeans[i].Value, Math.Round(monthlyMeans[i].Value, 1));
         }
     }
 
