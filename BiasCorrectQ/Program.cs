@@ -69,6 +69,11 @@ class Program
             return;
         }
 
+        //truncate inputs to water year data
+        Utils.TruncateToWYs(observed);
+        Utils.TruncateToWYs(baseline);
+        Utils.TruncateToWYs(future);
+
         //do bias correction
         bool biasbaseline = (baselineFile == futureFile);
         List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future, biasbaseline);
@@ -86,7 +91,6 @@ class Program
         //write output
         WriteFile(sim_biased, futureFile, outfmt);
     }
-
 
     private static void PrintUsage()
     {
@@ -140,12 +144,13 @@ class Program
         List<double> sim_annual = AnnualBiasCorrection(obs, sim);
 
         Dictionary<int, double> annualFactors =
-            GetAnnualFactors(sim_annual, biasedMonthly, obs[0].Date.Year);
+            GetAnnualFactors(sim_annual, biasedMonthly, obs[0].Date.Year + 1);
 
         var rval = new List<Point> { };
         foreach (Point pt in biasedMonthly)
         {
-            double val = pt.Value * annualFactors[pt.Date.Year];
+            int year = (pt.Date.Month < 10) ? pt.Date.Year : pt.Date.Year + 1;
+            double val = pt.Value * annualFactors[year];
             rval.Add(new Point(pt.Date, val));
         }
 
@@ -154,7 +159,7 @@ class Program
 
     private static List<double> AnnualBiasCorrection(List<Point> obs, List<Point> sim)
     {
-        List<double> sim_avgs = Utils.GetAnnualAverages(sim);
+        List<double> sim_avgs = Utils.GetWYAnnualAverages(sim);
 
         AnnualCDF obs_dist = new AnnualCDF(obs);
         AnnualCDF sim_dist = new AnnualCDF(sim);
@@ -178,7 +183,7 @@ class Program
     private static Dictionary<int, double> GetAnnualFactors(List<double> biasedAnnual,
             List<Point> biasedMonthly, int startYear)
     {
-        List<double> biasedMonthlyAnnualVolumes = Utils.GetAnnualVolumes(biasedMonthly);
+        List<double> biasedMonthlyAnnualVolumes = Utils.GetWYAnnualVolumes(biasedMonthly);
 
         var rval = new Dictionary<int, double> { };
         for (int i = 0; i < biasedAnnual.Count; i++)
@@ -355,7 +360,7 @@ class Program
     {
         string filename = Path.GetFileNameWithoutExtension(origname);
         string ext = Path.GetExtension(origname);
-        filename += "_BC." + ext;
+        filename += "_BC" + ext;
 
         string[] lines = new string[sim_new.Count];
         for (int i = 0; i < sim_new.Count; i++)

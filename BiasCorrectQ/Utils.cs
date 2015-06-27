@@ -7,7 +7,7 @@ namespace BiasCorrectQ
 {
 static class Utils
 {
-    public static List<double> ComputeCDF(List<double> values, out List<double> sorted_values)
+    internal static List<double> ComputeCDF(List<double> values, out List<double> sorted_values)
     {
         var rval = new List<double> { };
 
@@ -42,9 +42,9 @@ static class Utils
         return rval;
     }
 
-    public static List<double> GetAnnualAverages(List<Point> flow)
+    internal static List<double> GetWYAnnualAverages(List<Point> flow)
     {
-        var annualData = GetAnnualData(flow);
+        var annualData = GetWYAnnualData(flow);
 
         // get average for each year
         var values = new List<double> { };
@@ -56,29 +56,36 @@ static class Utils
         return values;
     }
 
-    private static List<List<double>> GetAnnualData(List<Point> flow)
+    private static List<List<double>> GetWYAnnualData(List<Point> flow)
     {
         int startYear = flow[0].Date.Year;
         int endYear = flow[flow.Count - 1].Date.Year;
 
         var annualData = new List<List<double>> { };
-        for (int i = 0; i < (endYear - startYear + 1); i++)
+        for (int i = 0; i < (endYear - startYear); i++)
         {
             annualData.Add(new List<double> { });
         }
 
-        // add all data for the year
+        // add data for the water year
         foreach (Point pt in flow)
         {
-            annualData[pt.Date.Year - startYear].Add(pt.Value);
+            if (pt.Date.Month < 10)
+            {
+                annualData[pt.Date.Year - startYear - 1].Add(pt.Value);
+            }
+            else
+            {
+                annualData[pt.Date.Year - startYear].Add(pt.Value);
+            }
         }
         return annualData;
     }
 
 
-    internal static List<double> GetAnnualVolumes(List<Point> flow)
+    internal static List<double> GetWYAnnualVolumes(List<Point> flow)
     {
-        var annualData = GetAnnualData(flow);
+        var annualData = GetWYAnnualData(flow);
 
         // get sum for each year
         var values = new List<double> { };
@@ -94,5 +101,36 @@ static class Utils
 
         return values;
     }
+
+    internal static void TruncateToWYs(List<Point> data)
+    {
+        //truncate beginning of data until October is found
+        foreach (var pt in data.ToList())
+        {
+            if (pt.Date.Month != 10)
+            {
+                data.Remove(pt);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        //truncate end of data until September is found
+        for (int i = data.Count - 1; i >= 0; i--)
+        {
+            var pt = data[i];
+            if (pt.Date.Month != 9)
+            {
+                data.Remove(pt);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
 } //namespace
 } //class

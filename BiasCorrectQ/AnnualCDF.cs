@@ -20,7 +20,7 @@ class AnnualCDF
 
     public AnnualCDF(List<Point> points)
     {
-        var values = Utils.GetAnnualAverages(points);
+        var values = Utils.GetWYAnnualAverages(points);
 
         List<double> sorted_values;
         var cdf = Utils.ComputeCDF(values, out sorted_values);
