@@ -10,12 +10,19 @@ class AnnualCDF
     public List<double> Probability
     {
         get;
-        set;
+        private set;
     }
+
     public List<double> Flow
     {
         get;
-        set;
+        private set;
+    }
+
+    public FittedStats FittedStats
+    {
+        get;
+        private set;
     }
 
     public AnnualCDF(List<Point> points)
@@ -27,7 +34,8 @@ class AnnualCDF
 
         Probability = cdf;
         Flow = sorted_values;
+        FittedStats = new FittedStats(values);
     }
 
-} //namespace
 } //class
+} //namespace

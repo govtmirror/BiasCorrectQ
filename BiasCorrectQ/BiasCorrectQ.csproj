@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnnualCDF.cs" />
+    <Compile Include="FittedStats.cs" />
     <Compile Include="MonthCDF.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

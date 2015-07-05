@@ -23,5 +23,6 @@ class Point
         Date = dt;
         Value = value;
     }
-}
-}
+
+} //class
+} //namespace

@@ -10,17 +10,25 @@ class MonthCDF
     public int Month
     {
         get;
-        set;
+        private set;
     }
+
     public List<double> Probability
     {
         get;
-        set;
+        private set;
     }
+
     public List<double> Flow
     {
         get;
-        set;
+        private set;
+    }
+
+    public FittedStats FittedStats
+    {
+        get;
+        private set;
     }
 
     public MonthCDF(List<Point> points, int month)
@@ -33,6 +41,7 @@ class MonthCDF
         Month = month;
         Probability = cdf;
         Flow = sorted_values;
+        FittedStats = new FittedStats(values);
     }
 
     private static List<double> GetMonthlyData(List<Point> data, int month)
@@ -48,5 +57,5 @@ class MonthCDF
         return values;
     }
 
-} //namespace
 } //class
+} //namespace
