@@ -29,20 +29,14 @@ class Program
         string outformat = args[4];
 
         //check input files exist
-        if (!File.Exists(observedFile))
+        var inFiles = new List<string> { observedFile, baselineFile, futureFile };
+        foreach (var str in inFiles)
         {
-            Console.WriteLine("error: file not found - " + observedFile);
-            return;
-        }
-        if (!File.Exists(baselineFile))
-        {
-            Console.WriteLine("error: file not found - " + baselineFile);
-            return;
-        }
-        if (!File.Exists(futureFile))
-        {
-            Console.WriteLine("error: file not found - " + futureFile);
-            return;
+            if (!File.Exists(str))
+            {
+                Console.WriteLine("error: file not found - " + str);
+                return;
+            }
         }
 
         //check input/output format properly specified
@@ -70,8 +64,7 @@ class Program
         }
 
         //do bias correction
-        bool biasbaseline = (baselineFile == futureFile);
-        List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future, biasbaseline);
+        List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future);
 
         //check bias correction was successful
         if (sim_biased.Count == 0)
@@ -100,28 +93,15 @@ class Program
     }
 
     internal static List<Point> DoHDBiasCorrection(List<Point> observed,
-            List<Point> baseline, List<Point> future, bool biasbaseline)
+            List<Point> baseline, List<Point> future)
     {
         //truncate inputs to water year data
         Utils.TruncateToWYs(observed);
         Utils.TruncateToWYs(baseline);
         Utils.TruncateToWYs(future);
 
-        List<Point> biasedFinal = new List<Point> { };
-        if (biasbaseline)
-        {
-            //bias correction for baseline or simulated historical
-            List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline);
-            biasedFinal = DoAnnualBiasCorrection(observed, baseline, biasedMonthly);
-        }
-        else
-        {
-            //not yet implemented, bias correct future streamflow
-
-            //List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline);
-            //List<Point> biasedAnnual = DoAnnualBiasCorrection(observed, baseline, biasedMonthly);
-            //List<Point> biasedFinal = DoHistoricalAdjustment(obs, sim, biasedAnnual);
-        }
+        List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline, future);
+        List<Point> biasedFinal = DoAnnualBiasCorrection(observed, baseline, future, biasedMonthly);
 
         return biasedFinal;
     }
@@ -139,9 +119,9 @@ class Program
     }
 
     private static List<Point> DoAnnualBiasCorrection(List<Point> obs,
-            List<Point> sim, List<Point> biasedMonthly)
+            List<Point> sim, List<Point> fut, List<Point> biasedMonthly)
     {
-        List<double> sim_annual = AnnualBiasCorrection(obs, sim);
+        List<double> sim_annual = AnnualBiasCorrection(obs, sim, fut);
 
         Dictionary<int, double> annualFactors =
             GetAnnualFactors(sim_annual, biasedMonthly, obs[0].Date.Year + 1);
@@ -157,23 +137,18 @@ class Program
         return rval;
     }
 
-    private static List<double> AnnualBiasCorrection(List<Point> obs, List<Point> sim)
+    private static List<double> AnnualBiasCorrection(List<Point> obs, List<Point> sim, List<Point> fut)
     {
-        List<double> sim_avgs = Utils.GetWYAnnualAverages(sim);
+        List<double> fut_avgs = Utils.GetWYAnnualAverages(fut);
 
         AnnualCDF obs_dist = new AnnualCDF(obs);
         AnnualCDF sim_dist = new AnnualCDF(sim);
 
         var rval = new List<double> { };
-        foreach (var item in sim_avgs)
+        foreach (var item in fut_avgs)
         {
-            double sim_exc = Interpolate(item, sim_dist.Flow, sim_dist.Probability, false);
-            if (sim_exc < 0)
-                return new List<double> { };
-
-            double value = Interpolate(sim_exc, obs_dist.Probability, obs_dist.Flow);
-            if (value < 0)
-                return new List<double> { };
+            double value = GetBiasCorrectedFlow(item, obs_dist.Flow, obs_dist.Probability, obs_dist.FittedStats,
+                                                sim_dist.Flow, sim_dist.Probability, sim_dist.FittedStats);
 
             rval.Add(value);
         }
@@ -194,7 +169,7 @@ class Program
         return rval;
     }
 
-    private static List<Point> DoMonthlyBiasCorrection(List<Point> obs, List<Point> sim)
+    private static List<Point> DoMonthlyBiasCorrection(List<Point> obs, List<Point> sim, List<Point> fut)
     {
         var obs_dist = new List<MonthCDF> { };
         var sim_dist = new List<MonthCDF> { };
@@ -205,20 +180,62 @@ class Program
         }
 
         var rval = new List<Point> { };
-        foreach (Point pt in sim)
+        foreach (Point pt in fut)
         {
+            var obs_cdf = obs_dist[pt.Date.Month - 1];
             var sim_cdf = sim_dist[pt.Date.Month - 1];
-            double sim_exc = Interpolate(pt.Value, sim_cdf.Flow, sim_cdf.Probability, false);
-            if (sim_exc < 0)
-                return new List<Point> { };
-
-            var obc_cdf = obs_dist[pt.Date.Month - 1];
-            double value = Interpolate(sim_exc, obc_cdf.Probability, obc_cdf.Flow);
-            if (value < 0)
-                return new List<Point> { };
+            double value = GetBiasCorrectedFlow(pt.Value, obs_cdf.Flow, obs_cdf.Probability, obs_cdf.FittedStats,
+                                                sim_cdf.Flow, sim_cdf.Probability, sim_cdf.FittedStats);
 
             rval.Add(new Point(pt.Date, value));
         }
+        return rval;
+    }
+
+    private static double GetBiasCorrectedFlow(double value,
+            List<double> obs_flow, List<double> obs_exc, FittedStats obs_stats,
+            List<double> sim_flow, List<double> sim_exc, FittedStats sim_stats)
+    {
+        double rval;
+
+        //if simulated value is zero return zero
+        if (value > -0.001 && value < 0.001)
+        {
+            return 0;
+        }
+
+        double quantile = -1;
+        double ln3anom = (Math.Log(value) - sim_stats.fittedmean) / sim_stats.fittedstd;
+        double thresh = 3.5;
+
+        //check if flow higher or lower than any quantile value
+        bool outRangeFlow = (value > sim_flow[0] || value < sim_flow[sim_flow.Count - 1]);
+
+        if (!outRangeFlow)
+        {
+            quantile = Interpolate(value, sim_flow, sim_exc, false);
+        }
+
+        //check if quantile is out of range of observed quantile
+        bool outRangeQuantile = (quantile > obs_exc[obs_exc.Count - 1]
+                                 || quantile < obs_exc[0] || outRangeFlow);
+
+        if (outRangeQuantile)
+        {
+            rval = Math.Exp(obs_stats.fittedstd * ln3anom + obs_stats.fittedmean);
+        }
+        else
+        {
+            rval = Interpolate(quantile, obs_exc, obs_flow);
+        }
+
+        //if simulated value is sufficiently out of range as defined by
+        //threshold value, use simple scaling technique
+        if (ln3anom < (-1 * thresh) || ln3anom > thresh)
+        {
+            rval = value / sim_stats.mean * obs_stats.mean;
+        }
+
         return rval;
     }
 

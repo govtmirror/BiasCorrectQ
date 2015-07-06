@@ -38,7 +38,7 @@ class TestBaselineBiasCorrection
         List<Point> baseline = BiasCorrectQ.Program.GetInputData(baselineFile, BiasCorrectQ.Program.TextFormat.vic);
 
         //do bias correction
-        List<Point> sim_biased = BiasCorrectQ.Program.DoHDBiasCorrection(observed, baseline, baseline, true);
+        List<Point> sim_biased = BiasCorrectQ.Program.DoHDBiasCorrection(observed, baseline, baseline);
 
         //get monthly means and check against accepted correct results
         List<Point> monthlyMeans = Utils.GetMeanSummaryHydrograph(sim_biased);
