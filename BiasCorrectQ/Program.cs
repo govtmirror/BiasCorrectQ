@@ -43,10 +43,12 @@ class Program
         if (informat != "csv" && informat != "vic")
         {
             PrintUsage();
+            return;
         }
         if (outformat != "csv" && outformat != "vic")
         {
             PrintUsage();
+            return;
         }
 
         //parse informat/outformat to TextFormat enum type
