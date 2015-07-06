@@ -64,7 +64,7 @@ class Program
         }
 
         //do bias correction
-        List<Point> sim_biased = DoHDBiasCorrection(observed, baseline, future);
+        List<Point> sim_biased = DoBiasCorrection(observed, baseline, future);
 
         //check bias correction was successful
         if (sim_biased.Count == 0)
@@ -92,7 +92,7 @@ class Program
         Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" as the \"futureFile\"");
     }
 
-    internal static List<Point> DoHDBiasCorrection(List<Point> observed,
+    internal static List<Point> DoBiasCorrection(List<Point> observed,
             List<Point> baseline, List<Point> future)
     {
         //truncate inputs to water year data
@@ -104,18 +104,6 @@ class Program
         List<Point> biasedFinal = DoAnnualBiasCorrection(observed, baseline, future, biasedMonthly);
 
         return biasedFinal;
-    }
-
-    private static List<Point> DoHistoricalAdjustment(List<Point> obs,
-            List<Point> sim, List<Point> sim_biased)
-    {
-        var rval = new List<Point> { };
-        for (int i = 0; i < obs.Count; i++)
-        {
-            double factor = sim_biased[i].Value - sim[i].Value;
-            rval.Add(new Point(obs[i].Date, obs[i].Value + factor));
-        }
-        return rval;
     }
 
     private static List<Point> DoAnnualBiasCorrection(List<Point> obs,
