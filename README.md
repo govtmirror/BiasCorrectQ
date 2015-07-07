@@ -1,3 +1,6 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/g0gdqfjjmfgnrskj?svg=true)](https://ci.appveyor.com/project/blounsbury36183/biascorrectq)
+
+
 ## BiasCorrectQ [BETA]
 ### Streamflow bias correction
 This code can be used to adjust daily simulated streamflows to be consistent with monthly to annual aspects of observed streamflows.
