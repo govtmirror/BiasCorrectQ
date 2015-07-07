@@ -39,13 +39,9 @@ class Program
             }
         }
 
-        //check input/output format properly specified
-        if (informat != "csv" && informat != "vic")
-        {
-            PrintUsage();
-            return;
-        }
-        if (outformat != "csv" && outformat != "vic")
+        //check informat/outformat properly specified
+        if ((informat != "csv" && informat != "vic") ||
+                (outformat != "csv" && outformat != "vic"))
         {
             PrintUsage();
             return;
@@ -119,7 +115,7 @@ class Program
         var rval = new List<Point> { };
         foreach (Point pt in biasedMonthly)
         {
-            int year = (pt.Date.Month < 10) ? pt.Date.Year : pt.Date.Year + 1;
+            int year = (pt.Date.Month > 9) ? pt.Date.Year + 1 : pt.Date.Year;
             double val = pt.Value * annualFactors[year];
             rval.Add(new Point(pt.Date, val));
         }
