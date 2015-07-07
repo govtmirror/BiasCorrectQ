@@ -148,12 +148,12 @@ class Program
     private static Dictionary<int, double> GetAnnualFactors(List<double> biasedAnnual,
             List<Point> biasedMonthly, int startYear)
     {
-        List<double> biasedMonthlyAnnualVolumes = Utils.GetWYAnnualVolumes(biasedMonthly);
+        List<double> biasedMonthlyAnnual = Utils.GetWYAnnualAverages(biasedMonthly);
 
         var rval = new Dictionary<int, double> { };
         for (int i = 0; i < biasedAnnual.Count; i++)
         {
-            rval.Add(startYear + i, (biasedAnnual[i] * 12) / biasedMonthlyAnnualVolumes[i]);
+            rval.Add(startYear + i, biasedAnnual[i] / biasedMonthlyAnnual[i]);
         }
 
         return rval;
@@ -203,7 +203,7 @@ class Program
 
         if (!outRangeFlow)
         {
-            quantile = Interpolate(value, sim_flow, sim_exc, false);
+            quantile = Interpolate(value, sim_flow, sim_exc);
         }
 
         //check if quantile is out of range of observed quantile
@@ -230,9 +230,9 @@ class Program
     }
 
     private static double Interpolate(double value, List<double> valuesList,
-                                      List<double> interpList, bool valuesListAscending = true)
+                                      List<double> interpList)
     {
-        int idx = ValueIndex(value, valuesList, valuesListAscending);
+        int idx = ValueIndex(value, valuesList);
 
         // out of bounds, interpolation unknown
         if (idx < 0)
@@ -243,7 +243,7 @@ class Program
         // no interpolation needed, first value in list
         if (idx == 0)
         {
-            return interpList[0];
+            return interpList.First();
         }
 
         double x = value;
@@ -256,31 +256,17 @@ class Program
         return Interpolate(x, x1, x2, y1, y2);
     }
 
-    private static int ValueIndex(double value, List<double> list, bool listAscending)
+    private static int ValueIndex(double value, List<double> list)
     {
-        if (listAscending)
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i] >= value)
-                {
-                    return i;
-                }
-            }
-        }
-        else //descending
-        {
-            if (value < list[list.Count - 1])
-            {
-                return -1; //out of bounds, no index
-            }
+        bool listAscending = (list.Last() > list.First());
 
-            for (int i = list.Count - 1; i >= 0; i--)
+        for (int i = 0; i < list.Count; i++)
+        {
+            bool found = listAscending ? list[i] >= value : value >= list[i];
+
+            if (found)
             {
-                if (list[i] >= value)
-                {
-                    return i;
-                }
+                return i;
             }
         }
         return -1;

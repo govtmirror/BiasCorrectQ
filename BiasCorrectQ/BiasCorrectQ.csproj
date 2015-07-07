@@ -64,12 +64,14 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Point.cs" />
     <Compile Include="Tests\TestBaselineBiasCorrection.cs" />
+    <Compile Include="Tests\TestFutureBiasCorrection.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Tests\TestData\BOISE_Baseline.month" />
+    <None Include="Tests\TestData\BOISE_Median2080.month" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Tests\TestData\BOISE_Observations.txt" />

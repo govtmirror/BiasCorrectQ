@@ -44,62 +44,66 @@ static class Utils
 
     internal static List<double> GetWYAnnualAverages(List<Point> flow)
     {
-        var annualData = GetWYAnnualData(flow);
+        var annualData = GetWYAnnualData(flow, true);
 
         // get average for each year
         var values = new List<double> { };
         foreach (var item in annualData)
         {
-            values.Add(item.Average());
+            int daysInYear = (DateTime.IsLeapYear(item.Key)) ? 366 : 365;
+            values.Add(item.Value.Sum() / daysInYear);
         }
 
         return values;
     }
 
-    private static List<List<double>> GetWYAnnualData(List<Point> flow)
-    {
-        int startYear = flow[0].Date.Year;
-        int endYear = flow[flow.Count - 1].Date.Year;
-
-        var annualData = new List<List<double>> { };
-        for (int i = 0; i < (endYear - startYear); i++)
-        {
-            annualData.Add(new List<double> { });
-        }
-
-        // add data for the water year
-        foreach (Point pt in flow)
-        {
-            if (pt.Date.Month < 10)
-            {
-                annualData[pt.Date.Year - startYear - 1].Add(pt.Value);
-            }
-            else
-            {
-                annualData[pt.Date.Year - startYear].Add(pt.Value);
-            }
-        }
-        return annualData;
-    }
-
-
     internal static List<double> GetWYAnnualVolumes(List<Point> flow)
     {
-        var annualData = GetWYAnnualData(flow);
+        var annualData = GetWYAnnualData(flow, false);
 
         // get sum for each year
         var values = new List<double> { };
         foreach (var item in annualData)
         {
-            double sum = 0;
-            foreach (var val in item)
-            {
-                sum += val;
-            }
-            values.Add(sum);
+            values.Add(item.Value.Sum());
         }
 
         return values;
+    }
+
+    private static Dictionary<int, List<double>> GetWYAnnualData(List<Point> flow, bool cfs_days)
+    {
+        int startWY = flow[0].Date.Year + 1;
+        int endWY = flow[flow.Count - 1].Date.Year;
+
+        var rval = new Dictionary<int, List<double>> { };
+        for (int i = 0; i < (endWY - startWY + 1); i++)
+        {
+            rval.Add(startWY + i, new List<double> { });
+        }
+
+        // add data for the water year
+        foreach (Point pt in flow)
+        {
+            int month = pt.Date.Month;
+            int year = pt.Date.Year;
+
+            double value = pt.Value;
+            if (cfs_days)
+            {
+                value *= DateTime.DaysInMonth(year, month);
+            }
+
+            if (month > 9)
+            {
+                rval[pt.Date.Year + 1].Add(value);
+            }
+            else
+            {
+                rval[pt.Date.Year].Add(value);
+            }
+        }
+        return rval;
     }
 
     internal static List<Point> GetMeanSummaryHydrograph(List<Point> flow)
@@ -160,5 +164,5 @@ static class Utils
         }
     }
 
-} //namespace
 } //class
+} //namespace
