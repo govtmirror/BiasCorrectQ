@@ -44,7 +44,7 @@ class MonthCDF
         FittedStats = new FittedStats(values);
     }
 
-    private static List<double> GetMonthlyData(List<Point> data, int month)
+    private List<double> GetMonthlyData(List<Point> data, int month)
     {
         var values = new List<double> { };
         foreach (Point pt in data)
