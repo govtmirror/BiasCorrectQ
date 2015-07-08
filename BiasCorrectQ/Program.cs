@@ -22,14 +22,14 @@ class Program
             return;
         }
 
-        string observedFile = args[0];
-        string baselineFile = args[1];
-        string futureFile = args[2];
+        string observed = args[0];
+        string baseline = args[1];
+        string future = args[2];
         string informat = args[3];
         string outformat = args[4];
 
         //check input files exist
-        var inFiles = new List<string> { observedFile, baselineFile, futureFile };
+        var inFiles = new List<string> { observed, baseline, future };
         foreach (var str in inFiles)
         {
             if (!File.Exists(str))
@@ -51,31 +51,11 @@ class Program
         TextFormat infmt = (TextFormat)Enum.Parse(typeof(TextFormat), informat);
         TextFormat outfmt = (TextFormat)Enum.Parse(typeof(TextFormat), outformat);
 
-        //get input data
-        List<Point> observed = GetInputData(observedFile, infmt);
-        List<Point> baseline = GetInputData(baselineFile, infmt);
-        List<Point> future = GetInputData(futureFile, infmt);
-        if (observed.Count == 0 || baseline.Count == 0 || future.Count == 0)
-        {
-            Console.WriteLine("error parsing input files");
-            return;
-        }
-
         //do bias correction
-        List<Point> sim_biased = DoBiasCorrection(observed, baseline, future);
-
-        //check bias correction was successful
-        if (sim_biased.Count == 0)
-        {
-            Console.WriteLine("error computing bias corrected flow for:");
-            Console.WriteLine("  observed: " + observedFile);
-            Console.WriteLine("  baseline: " + baselineFile);
-            Console.WriteLine("  future: " + futureFile);
-            return;
-        }
+        List<Point> biasedFinal = DoBiasCorrection(observed, baseline, future, infmt);
 
         //write output
-        WriteFile(sim_biased, futureFile, outfmt);
+        WriteFile(biasedFinal, future, outfmt);
     }
 
     private static void PrintUsage()
@@ -90,16 +70,59 @@ class Program
         Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" as the \"futureFile\"");
     }
 
-    internal static List<Point> DoBiasCorrection(List<Point> observed,
-            List<Point> baseline, List<Point> future)
+    internal static List<Point> DoBiasCorrection(string observedFile,
+            string baselineFile, string futureFile, TextFormat infmt)
     {
+        //get input data
+        List<Point> observed = GetInputData(observedFile, infmt);
+        List<Point> baseline = GetInputData(baselineFile, infmt);
+        List<Point> future = GetInputData(futureFile, infmt);
+        if (observed.Count == 0 || baseline.Count == 0 || future.Count == 0)
+        {
+            Console.WriteLine("error parsing input files");
+            return new List<Point> { };
+        }
+
+        //get monthly data
+        List<Point> observedMonthly = DataToMonthly(observed);
+        List<Point> baselineMonthly = DataToMonthly(baseline);
+        List<Point> futureMonthly = DataToMonthly(future);
+        if (observedMonthly.Count == 0 || baselineMonthly.Count == 0
+                || futureMonthly.Count == 0)
+        {
+            Console.WriteLine("error parsing input file(s) to monthly");
+            return new List<Point> { };
+        }
+
         //truncate inputs to water year data
         Utils.TruncateToWYs(observed);
         Utils.TruncateToWYs(baseline);
         Utils.TruncateToWYs(future);
+        Utils.TruncateToWYs(observedMonthly);
+        Utils.TruncateToWYs(baselineMonthly);
+        Utils.TruncateToWYs(futureMonthly);
 
-        List<Point> biasedMonthly = DoMonthlyBiasCorrection(observed, baseline, future);
-        List<Point> biasedFinal = DoAnnualBiasCorrection(observed, baseline, future, biasedMonthly);
+        //do monthly bias correction
+        List<Point> biasedMonthly = DoMonthlyBiasCorrection(observedMonthly,
+                                    baselineMonthly, futureMonthly);
+        List<Point> biasedFinal = DoAnnualBiasCorrection(observedMonthly,
+                                  baselineMonthly, futureMonthly, biasedMonthly);
+
+        //do daily adjustments
+        if (IsDataDaily(future))
+        {
+
+        }
+
+        //check bias correction was successful
+        if (biasedFinal.Count == 0)
+        {
+            Console.WriteLine("error computing bias corrected flow for:");
+            Console.WriteLine("  observed: " + observedFile);
+            Console.WriteLine("  baseline: " + baselineFile);
+            Console.WriteLine("  future: " + futureFile);
+            return new List<Point> { };
+        }
 
         return biasedFinal;
     }
@@ -123,7 +146,8 @@ class Program
         return rval;
     }
 
-    private static List<double> AnnualBiasCorrection(List<Point> obs, List<Point> sim, List<Point> fut)
+    private static List<double> AnnualBiasCorrection(List<Point> obs,
+            List<Point> sim, List<Point> fut)
     {
         List<double> fut_avgs = Utils.GetWYAnnualAverages(fut);
 
@@ -133,16 +157,22 @@ class Program
         var rval = new List<double> { };
         foreach (var item in fut_avgs)
         {
-            double value = GetBiasCorrectedFlow(item, obs_dist.Flow, obs_dist.Probability, obs_dist.FittedStats,
-                                                sim_dist.Flow, sim_dist.Probability, sim_dist.FittedStats);
+            double value = GetBiasCorrectedFlow(item,
+                                                obs_dist.Flow,
+                                                obs_dist.Probability,
+                                                obs_dist.FittedStats,
+                                                sim_dist.Flow,
+                                                sim_dist.Probability,
+                                                sim_dist.FittedStats);
 
             rval.Add(value);
         }
         return rval;
     }
 
-    private static Dictionary<int, double> GetAnnualFactors(List<double> biasedAnnual,
-            List<Point> biasedMonthly, int startYear)
+    private static Dictionary<int, double> GetAnnualFactors(
+        List<double> biasedAnnual,
+        List<Point> biasedMonthly, int startYear)
     {
         List<double> biasedMonthlyAnnual = Utils.GetWYAnnualAverages(biasedMonthly);
 
@@ -155,7 +185,8 @@ class Program
         return rval;
     }
 
-    private static List<Point> DoMonthlyBiasCorrection(List<Point> obs, List<Point> sim, List<Point> fut)
+    private static List<Point> DoMonthlyBiasCorrection(List<Point> obs,
+            List<Point> sim, List<Point> fut)
     {
         var obs_dist = new List<MonthCDF> { };
         var sim_dist = new List<MonthCDF> { };
@@ -170,8 +201,13 @@ class Program
         {
             var obs_cdf = obs_dist[pt.Date.Month - 1];
             var sim_cdf = sim_dist[pt.Date.Month - 1];
-            double value = GetBiasCorrectedFlow(pt.Value, obs_cdf.Flow, obs_cdf.Probability, obs_cdf.FittedStats,
-                                                sim_cdf.Flow, sim_cdf.Probability, sim_cdf.FittedStats);
+            double value = GetBiasCorrectedFlow(pt.Value,
+                                                obs_cdf.Flow,
+                                                obs_cdf.Probability,
+                                                obs_cdf.FittedStats,
+                                                sim_cdf.Flow,
+                                                sim_cdf.Probability,
+                                                sim_cdf.FittedStats);
 
             rval.Add(new Point(pt.Date, value));
         }
@@ -195,7 +231,8 @@ class Program
         double thresh = 3.5;
 
         //check if flow higher or lower than any quantile value
-        bool outRangeFlow = (value > sim_flow[0] || value < sim_flow[sim_flow.Count - 1]);
+        bool outRangeFlow = (value > sim_flow[0]
+                             || value < sim_flow[sim_flow.Count - 1]);
 
         if (!outRangeFlow)
         {
@@ -268,7 +305,8 @@ class Program
         return -1;
     }
 
-    private static double Interpolate(double x, double x1, double x2, double y1, double y2)
+    private static double Interpolate(double x, double x1, double x2, double y1,
+                                      double y2)
     {
         if ((x2 - x1) == 0)
         {
@@ -285,24 +323,43 @@ class Program
         }
         if (fmt == TextFormat.vic)
         {
-            return GetVicMonthly(file);
+            return GetVicData(file);
         }
         return new List<Point> { };
     }
 
-    private static List<Point> GetVicMonthly(string filename)
+    private static List<Point> GetVicData(string filename)
     {
         var rval = new List<Point> { };
 
         string[] lines = File.ReadAllLines(filename);
         for (int i = 0; i < lines.Length; i++)
         {
-            string[] line = lines[i].Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+            string[] line = lines[i].Split(new char[0],
+                                           StringSplitOptions.RemoveEmptyEntries);
 
-            DateTime dt = new DateTime(Convert.ToInt32(line[0]), Convert.ToInt32(line[1]), 1);
+            DateTime dt = default(DateTime);
+            string value = string.Empty;
+
+            if (line.Length == 3)
+            {
+                dt = new DateTime(Convert.ToInt32(line[0]), Convert.ToInt32(line[1]), 1);
+                value = line[2];
+            }
+            else if (line.Length == 4)
+            {
+                dt = new DateTime(Convert.ToInt32(line[0]), Convert.ToInt32(line[1]),
+                                  Convert.ToInt32(line[2]));
+                value = line[3];
+            }
+            else
+            {
+                Console.WriteLine("unsupported input file format - " + filename);
+                return new List<Point> { };
+            }
 
             double val;
-            if (!double.TryParse(line[2], out val))
+            if (!double.TryParse(value, out val))
             {
                 Console.WriteLine("error parsing value at row: " + (i + 1));
                 return new List<Point> { };
@@ -345,7 +402,8 @@ class Program
         return rval;
     }
 
-    private static void WriteFile(List<Point> sim_new, string origname, TextFormat fmt)
+    private static void WriteFile(List<Point> sim_new, string origname,
+                                  TextFormat fmt)
     {
         string filename = Path.GetFileNameWithoutExtension(origname);
         string ext = Path.GetExtension(origname);
@@ -366,6 +424,97 @@ class Program
             }
         }
         File.WriteAllLines(filename, lines);
+    }
+
+    private static bool IsDataMonthly(List<Point> data)
+    {
+        /*
+         * pretty primitive check, if someone has a better method feel free
+         * to modify this
+         */
+        var d1 = data[0].Date;
+        var d2 = data[1].Date;
+        if (d2 == d1.AddMonths(1))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private static bool IsDataDaily(List<Point> data)
+    {
+        /*
+         * pretty primitive check, if someone has a better method feel free
+         * to modify this
+         */
+        var d1 = data[0].Date;
+        var d2 = data[1].Date;
+        if (d2 == d1.AddDays(1))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private static List<Point> DataToMonthly(List<Point> data)
+    {
+        /*
+         * if data is monthly return data, if data is daily process
+         * data, otherwise print error message and get out of here
+         */
+        if (IsDataMonthly(data))
+        {
+            return data;
+        }
+        else if (IsDataDaily(data))
+        {
+            return DailyToMonthly(data);
+        }
+        else
+        {
+            Console.WriteLine("error: only monthly or daily inputs supported");
+            return new List<Point> { };
+        }
+    }
+
+    private static List<Point> DailyToMonthly(List<Point> data)
+    {
+        var rval = new List<Point> { };
+
+        int startYear = data.First().Date.Year;
+        int startMonth = data.First().Date.Month;
+        int endYear = data.Last().Date.Year;
+        int endMonth = data.Last().Date.Month;
+
+        var startDate = new DateTime(startYear, startMonth, 1);
+        var endDate = new DateTime(endYear, endMonth, 1);
+
+        int currIdx = 0;
+        var currDate = startDate;
+        while (currDate <= endDate)
+        {
+            var values = new List<double> { };
+            for (int i = currIdx; i < data.Count; i++)
+            {
+                var pt = data[i];
+
+                if (pt.Date.Month == currDate.Month)
+                {
+                    values.Add(pt.Value);
+                    currIdx++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            rval.Add(new Point(currDate, values.Average()));
+
+            currDate = currDate.AddMonths(1);
+        }
+
+        return rval;
     }
 
 } //class
