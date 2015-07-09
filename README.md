@@ -13,12 +13,13 @@ http://www.hydro.washington.edu/Lettenmaier/permanent_archive/hamleaf/bams_paper
 ### Running the program
 This is a Console Application, it is run from a Windows Command Prompt (cmd.exe), like so:
 
-<pre>C:\>BiasCorrectQ.exe  observedFile  baselineFile  futureFile  informat  outformat</pre>
+<pre>C:\>BiasCorrectQ.exe  observedFile  baselineFile  futureFile  outFile  informat  outformat</pre>
 
 Where:
 * observedFile - observed monthly streamflow
 * baselineFile - simulated historical monthly streamflow
 * futureFile - simulated future monthly streamflow
+* outFile - file name for program output of bias corrected monthly streamflow
 * informat/outformat - either "vic" or "csv", text file format is from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv),
 
 NOTE: If running the baseline bias correction enter "baselineFile" as the "futureFile".
