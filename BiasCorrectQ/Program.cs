@@ -16,7 +16,7 @@ class Program
 
     static void Main(string[] args)
     {
-        if (args.Length != 5)
+        if (args.Length != 6)
         {
             PrintUsage();
             return;
@@ -25,8 +25,9 @@ class Program
         string observed = args[0];
         string baseline = args[1];
         string future = args[2];
-        string informat = args[3];
-        string outformat = args[4];
+        string outfile = args[3];
+        string informat = args[4];
+        string outformat = args[5];
 
         //check input files exist
         var inFiles = new List<string> { observed, baseline, future };
@@ -37,6 +38,14 @@ class Program
                 Console.WriteLine("error: file not found - " + str);
                 return;
             }
+        }
+
+        //check outfile directory exists
+        string outDir = Path.GetDirectoryName(Path.GetFullPath(outfile));
+        if (!Directory.Exists(outDir))
+        {
+            Console.WriteLine("error: outFile directory not found - " + outDir);
+            return;
         }
 
         //check informat/outformat properly specified
@@ -55,16 +64,17 @@ class Program
         List<Point> biasedFinal = DoBiasCorrection(observed, baseline, future, infmt);
 
         //write output
-        WriteFile(biasedFinal, future, outfmt);
+        WriteFile(biasedFinal, outfile, outfmt);
     }
 
     private static void PrintUsage()
     {
-        Console.WriteLine("Usage:  BiasCorrectQ.exe  observedFile  baselineFile  futureFile  informat  outformat");
+        Console.WriteLine("Usage:  BiasCorrectQ.exe  observedFile  baselineFile  futureFile  outFile  informat  outformat");
         Console.WriteLine("Where:");
         Console.WriteLine("    observedFile - observed monthly streamflow");
         Console.WriteLine("    baselineFile - simulated historical monthly streamflow");
         Console.WriteLine("    futureFile - simulated future monthly streamflow");
+        Console.WriteLine("    outFile - file name for program output of bias corrected monthly streamflow");
         Console.WriteLine("    informat/outformat - either \"vic\" or \"csv\"");
         Console.WriteLine();
         Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" as the \"futureFile\"");
@@ -402,13 +412,9 @@ class Program
         return rval;
     }
 
-    private static void WriteFile(List<Point> sim_new, string origname,
+    private static void WriteFile(List<Point> sim_new, string filename,
                                   TextFormat fmt)
     {
-        string filename = Path.GetFileNameWithoutExtension(origname);
-        string ext = Path.GetExtension(origname);
-        filename += "_BC" + ext;
-
         string[] lines = new string[sim_new.Count];
         for (int i = 0; i < sim_new.Count; i++)
         {
