@@ -119,9 +119,11 @@ class Program
                                   baselineMonthly, futureMonthly, biasedMonthly);
 
         //do daily adjustments
-        if (IsDataDaily(future))
+        if (Utils.IsDataDaily(future))
         {
-
+            List<Point> biasedDaily = AdjDailyToMonthly(future, biasedFinal);
+            AdjMonthlyBoundary(biasedDaily);
+            biasedFinal = AdjDailyToMonthly(biasedDaily, biasedFinal);
         }
 
         //check bias correction was successful
@@ -135,6 +137,69 @@ class Program
         }
 
         return biasedFinal;
+    }
+
+    private static void AdjMonthlyBoundary(List<Point> biasedFinal)
+    {
+        /*
+         * note: loop over (biasedFinal.Count - 1) is intentional to ignore
+         * the last value in the list
+         */
+        for (int i = 0; i < biasedFinal.Count - 1; i++)
+        {
+            var pt = biasedFinal[i];
+            if (pt.Date.Day == DateTime.DaysInMonth(pt.Date.Year, pt.Date.Month))
+            {
+                var ptNext = biasedFinal[i + 1];
+
+                var val = pt.Value;
+                var valNext = ptNext.Value;
+
+                pt.Value = (3 * val + valNext) / 4;
+                ptNext.Value = (val + 3 * valNext) / 4;
+            }
+        }
+    }
+
+    private static List<Point> AdjDailyToMonthly(List<Point> future,
+            List<Point> biasedMonthly)
+    {
+        var futureMonthly = DataToMonthly(future);
+
+        Dictionary<DateTime, double> monthlyFactors =
+            GetMonthlyFactors(biasedMonthly, futureMonthly);
+
+        var rval = new List<Point> { };
+        foreach (var pt in future)
+        {
+            DateTime key = new DateTime(pt.Date.Year, pt.Date.Month, 1);
+            rval.Add(new Point(pt.Date, pt.Value * monthlyFactors[key]));
+        }
+
+        return rval;
+    }
+
+    /// <summary>
+    /// Dictionary of key=DateTime, value=monthly_factor
+    /// where DateTime is first of month
+    /// </summary>
+    /// <param name="futureMonthly"></param>
+    /// <param name="biasedMonthly"></param>
+    /// <returns></returns>
+    private static Dictionary<DateTime, double> GetMonthlyFactors(
+        List<Point> biasedMonthly, List<Point> futureMonthly)
+    {
+        var rval = new Dictionary<DateTime, double> { };
+        for (int i = 0; i < biasedMonthly.Count; i++)
+        {
+            var bcPt = biasedMonthly[i];
+            var futPt = futureMonthly[i];
+
+            DateTime key = new DateTime(bcPt.Date.Year, bcPt.Date.Month, 1);
+
+            rval.Add(key, bcPt.Value / futPt.Value);
+        }
+        return rval;
     }
 
     private static List<Point> DoAnnualBiasCorrection(List<Point> obs,
@@ -170,16 +235,23 @@ class Program
             double value = GetBiasCorrectedFlow(item,
                                                 obs_dist.Flow,
                                                 obs_dist.Probability,
-                                                obs_dist.FittedStats,
+                                                obs_dist.LNfit,
                                                 sim_dist.Flow,
                                                 sim_dist.Probability,
-                                                sim_dist.FittedStats);
+                                                sim_dist.LNfit);
 
             rval.Add(value);
         }
         return rval;
     }
 
+    /// <summary>
+    /// Dictionary of key=wy, value=annual_factor
+    /// </summary>
+    /// <param name="biasedAnnual"></param>
+    /// <param name="biasedMonthly"></param>
+    /// <param name="startYear"></param>
+    /// <returns></returns>
     private static Dictionary<int, double> GetAnnualFactors(
         List<double> biasedAnnual,
         List<Point> biasedMonthly, int startYear)
@@ -214,10 +286,10 @@ class Program
             double value = GetBiasCorrectedFlow(pt.Value,
                                                 obs_cdf.Flow,
                                                 obs_cdf.Probability,
-                                                obs_cdf.FittedStats,
+                                                obs_cdf.LNfit,
                                                 sim_cdf.Flow,
                                                 sim_cdf.Probability,
-                                                sim_cdf.FittedStats);
+                                                sim_cdf.LNfit);
 
             rval.Add(new Point(pt.Date, value));
         }
@@ -225,8 +297,8 @@ class Program
     }
 
     private static double GetBiasCorrectedFlow(double value,
-            List<double> obs_flow, List<double> obs_exc, FittedStats obs_stats,
-            List<double> sim_flow, List<double> sim_exc, FittedStats sim_stats)
+            List<double> obs_flow, List<double> obs_exc, LNFit obs_stats,
+            List<double> sim_flow, List<double> sim_exc, LNFit sim_stats)
     {
         double rval;
 
@@ -237,7 +309,7 @@ class Program
         }
 
         double quantile = -1;
-        double ln3anom = (Math.Log(value) - sim_stats.fittedmean) / sim_stats.fittedstd;
+        double ln3anom = (Math.Log(value) - sim_stats.lnmean) / sim_stats.lnstd;
         double thresh = 3.5;
 
         //check if flow higher or lower than any quantile value
@@ -255,7 +327,7 @@ class Program
 
         if (outRangeQuantile)
         {
-            rval = Math.Exp(obs_stats.fittedstd * ln3anom + obs_stats.fittedmean);
+            rval = Math.Exp(obs_stats.lnstd * ln3anom + obs_stats.lnmean);
         }
         else
         {
@@ -275,7 +347,7 @@ class Program
     private static double Interpolate(double value, List<double> valuesList,
                                       List<double> interpList)
     {
-        int idx = ValueIndex(value, valuesList);
+        int idx = Utils.ValueIndex(value, valuesList);
 
         // out of bounds, interpolation unknown
         if (idx < 0)
@@ -296,33 +368,7 @@ class Program
         double y1 = interpList[idx - 1];
         double y2 = interpList[idx];
 
-        return Interpolate(x, x1, x2, y1, y2);
-    }
-
-    private static int ValueIndex(double value, List<double> list)
-    {
-        bool listAscending = (list.Last() > list.First());
-
-        for (int i = 0; i < list.Count; i++)
-        {
-            bool found = listAscending ? list[i] >= value : value >= list[i];
-
-            if (found)
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static double Interpolate(double x, double x1, double x2, double y1,
-                                      double y2)
-    {
-        if ((x2 - x1) == 0)
-        {
-            return (y1 + y2) / 2;
-        }
-        return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
+        return Utils.Interpolate(x, x1, x2, y1, y2);
     }
 
     internal static List<Point> GetInputData(string file, TextFormat fmt)
@@ -422,44 +468,21 @@ class Program
 
             if (fmt == TextFormat.vic)
             {
-                lines[i] = string.Format("{0} {1} {2}", pt.Date.Year, pt.Date.Month, pt.Value);
+                lines[i] = string.Format("{0} {1} {2:0.000}", pt.Date.Year, pt.Date.Month,
+                                         pt.Value);
+                if (Utils.IsDataDaily(sim_new))
+                {
+                    lines[i] = string.Format("{0} {1} {2} {3:0.000}", pt.Date.Year, pt.Date.Month,
+                                             pt.Date.Day, pt.Value);
+                }
+
             }
             if (fmt == TextFormat.csv)
             {
-                lines[i] = string.Format("{0},{1}", pt.Date, pt.Value);
+                lines[i] = string.Format("{0},{1:0.000}", pt.Date, pt.Value);
             }
         }
         File.WriteAllLines(filename, lines);
-    }
-
-    private static bool IsDataMonthly(List<Point> data)
-    {
-        /*
-         * pretty primitive check, if someone has a better method feel free
-         * to modify this
-         */
-        var d1 = data[0].Date;
-        var d2 = data[1].Date;
-        if (d2 == d1.AddMonths(1))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private static bool IsDataDaily(List<Point> data)
-    {
-        /*
-         * pretty primitive check, if someone has a better method feel free
-         * to modify this
-         */
-        var d1 = data[0].Date;
-        var d2 = data[1].Date;
-        if (d2 == d1.AddDays(1))
-        {
-            return true;
-        }
-        return false;
     }
 
     private static List<Point> DataToMonthly(List<Point> data)
@@ -468,11 +491,11 @@ class Program
          * if data is monthly return data, if data is daily process
          * data, otherwise print error message and get out of here
          */
-        if (IsDataMonthly(data))
+        if (Utils.IsDataMonthly(data))
         {
             return data;
         }
-        else if (IsDataDaily(data))
+        else if (Utils.IsDataDaily(data))
         {
             return DailyToMonthly(data);
         }
