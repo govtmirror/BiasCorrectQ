@@ -7,7 +7,8 @@ namespace BiasCorrectQ
 {
 static class Utils
 {
-    internal static List<double> ComputeCDF(List<double> values, out List<double> sorted_values)
+    internal static List<double> ComputeCDF(List<double> values,
+                                            out List<double> sorted_values)
     {
         var rval = new List<double> { };
 
@@ -71,7 +72,8 @@ static class Utils
         return values;
     }
 
-    private static Dictionary<int, List<double>> GetWYAnnualData(List<Point> flow, bool cfs_days)
+    private static Dictionary<int, List<double>> GetWYAnnualData(List<Point> flow,
+            bool cfs_days)
     {
         int startWY = flow[0].Date.Year + 1;
         int endWY = flow[flow.Count - 1].Date.Year;
@@ -128,7 +130,8 @@ static class Utils
         foreach (var month in wy_months)
         {
             int year = (month > 9) ? 1999 : 2000;
-            rval.Add(new Point(new DateTime(year, month, 1), monthData[month - 1].Average()));
+            rval.Add(new Point(new DateTime(year, month, 1),
+                               monthData[month - 1].Average()));
         }
 
         return rval;
@@ -162,6 +165,79 @@ static class Utils
                 break;
             }
         }
+    }
+
+    internal static List<Point> GetMonthlyAverages(List<Point> future)
+    {
+        if (IsDataMonthly(future))
+        {
+            return future;
+        }
+
+        var rval = new List<Point> { };
+        foreach (var pt in future)
+        {
+            var values = new List<double> { };
+
+        }
+
+        return rval;
+    }
+
+    internal static int ValueIndex(double value, List<double> list)
+    {
+        bool listAscending = (list.Last() > list.First());
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            bool found = listAscending ? list[i] >= value : value >= list[i];
+
+            if (found)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    internal static double Interpolate(double x, double x1, double x2,
+                                       double y1, double y2)
+    {
+        if ((x2 - x1) == 0)
+        {
+            return (y1 + y2) / 2;
+        }
+        return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
+    }
+
+    internal static bool IsDataMonthly(List<Point> data)
+    {
+        /*
+         * pretty primitive check, if someone has a better method feel free
+         * to modify this
+         */
+        var d1 = data[0].Date;
+        var d2 = data[1].Date;
+        if (d2 == d1.AddMonths(1))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    internal static bool IsDataDaily(List<Point> data)
+    {
+        /*
+         * pretty primitive check, if someone has a better method feel free
+         * to modify this
+         */
+        var d1 = data[0].Date;
+        var d2 = data[1].Date;
+        if (d2 == d1.AddDays(1))
+        {
+            return true;
+        }
+        return false;
     }
 
 } //class

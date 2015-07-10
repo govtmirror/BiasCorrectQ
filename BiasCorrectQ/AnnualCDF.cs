@@ -19,7 +19,7 @@ class AnnualCDF
         private set;
     }
 
-    public FittedStats FittedStats
+    public LNFit LNfit
     {
         get;
         private set;
@@ -34,7 +34,7 @@ class AnnualCDF
 
         Probability = cdf;
         Flow = sorted_values;
-        FittedStats = new FittedStats(values);
+        LNfit = new LNFit(values);
     }
 
 } //class

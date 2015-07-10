@@ -25,7 +25,7 @@ class MonthCDF
         private set;
     }
 
-    public FittedStats FittedStats
+    public LNFit LNfit
     {
         get;
         private set;
@@ -41,7 +41,7 @@ class MonthCDF
         Month = month;
         Probability = cdf;
         Flow = sorted_values;
-        FittedStats = new FittedStats(values);
+        LNfit = new LNFit(values);
     }
 
     private List<double> GetMonthlyData(List<Point> data, int month)

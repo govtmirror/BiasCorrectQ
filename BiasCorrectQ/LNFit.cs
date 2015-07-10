@@ -5,15 +5,15 @@ using System.Text;
 
 namespace BiasCorrectQ
 {
-class FittedStats
+class LNFit
 {
-    public double fittedmean
+    public double lnmean
     {
         get;
         private set;
     }
 
-    public double fittedstd
+    public double lnstd
     {
         get;
         private set;
@@ -43,7 +43,7 @@ class FittedStats
         private set;
     }
 
-    public FittedStats(List<double> values)
+    public LNFit(List<double> values)
     {
         var sum = new double[4];
         for (int i = 0; i < values.Count; i++)
@@ -57,8 +57,8 @@ class FittedStats
         }
 
         double nvals = values.Count;
-        fittedmean = sum[0] / nvals;
-        fittedstd = Math.Sqrt((sum[1] - sum[0] * sum[0] / nvals) / (nvals - 1));
+        lnmean = sum[0] / nvals;
+        lnstd = Math.Sqrt((sum[1] - sum[0] * sum[0] / nvals) / (nvals - 1));
         mean = sum[2] / nvals;
         std = Math.Sqrt((sum[3] - sum[2] * sum[2] / nvals) / (nvals - 1));
         alpha = 0.7797 * std;
