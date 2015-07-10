@@ -1,14 +1,12 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/g0gdqfjjmfgnrskj?svg=true)](https://ci.appveyor.com/project/blounsbury36183/biascorrectq)
 
 
-## BiasCorrectQ [BETA]
+## BiasCorrectQ
 ### Streamflow bias correction
 This code can be used to adjust daily simulated streamflow to be consistent with monthly to annual aspects of observed streamflow.
 
 The methods follow those outlined in Snover et al. (2003):
 http://www.hydro.washington.edu/Lettenmaier/permanent_archive/hamleaf/bams_paper/technical_documentation.pdf
-
-**NOTE: This is BETA code! A fully functional program is expected to be complete by September 2015.**
 
 ### Usage
 This is a Console Application, it is run from a Windows Command Prompt (cmd.exe), like so:
@@ -16,13 +14,15 @@ This is a Console Application, it is run from a Windows Command Prompt (cmd.exe)
 <pre>C:\>BiasCorrectQ.exe  observedFile  baselineFile  futureFile  outFile  informat  outformat</pre>
 
 Where:
-* observedFile - observed monthly streamflow
-* baselineFile - simulated historical monthly streamflow
-* futureFile - simulated future monthly streamflow
-* outFile - file name for program output of bias corrected monthly streamflow
-* informat/outformat - either "vic" or "csv", text file format is from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv),
+* observedFile - observed daily or monthly streamflow
+* baselineFile - simulated historical daily or monthly streamflow
+* futureFile - simulated future daily or monthly streamflow
+* outFile - file name for program output of bias corrected streamflow
+* informat/outformat - either "vic" or "csv", text file format is from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv)
 
-NOTE: If running the baseline bias correction enter "baselineFile" as the "futureFile".
+If inputs are monthly the bias corrected streamflow will be monthly, likewise if the inputs are daily the bias corrected streamflow will be daily.
+
+NOTE: If running the baseline bias correction enter "baselineFile" as the "futureFile". 
 
 ### TO-DO
 * ~~Extend the methods to bias correct future streamflow at equal monthly timesteps and periods of record.~~
