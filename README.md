@@ -20,7 +20,7 @@ Where:
 * outFile - file name for program output of bias corrected streamflow
 * informat/outformat - either "vic" or "csv", text file format is from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv)
 
-If inputs are monthly the bias corrected streamflow will be monthly, likewise if the inputs are daily the bias corrected streamflow will be daily.
+If the futureFile is monthly the bias corrected streamflow will be monthly, likewise if the futureFile is daily the bias corrected streamflow will be daily.
 
 NOTE: If running the baseline bias correction enter "baselineFile" as the "futureFile". 
 
