@@ -29,23 +29,36 @@ class Program
         string informat = args[4];
         string outformat = args[5];
 
+        var inFilesOrFolders = new List<string> { observed, baseline, future };
+
         //check input files exist
-        var inFiles = new List<string> { observed, baseline, future };
-        foreach (var str in inFiles)
+        if (File.Exists(inFilesOrFolders[0]))
         {
-            if (!File.Exists(str))
+            foreach (var file in inFilesOrFolders)
             {
-                Console.WriteLine("error: file not found - " + str);
-                return;
+                if (!File.Exists(file))
+                {
+                    Console.WriteLine("error: file not found - " + file);
+                    return;
+                }
             }
         }
 
-        //check outfile directory exists
-        string outDir = Path.GetDirectoryName(Path.GetFullPath(outfile));
-        if (!Directory.Exists(outDir))
+        //check input folders exist
+        bool processDirectories = false;
+        string dir = Path.GetFullPath(inFilesOrFolders[0]);
+        if (Directory.Exists(dir))
         {
-            Console.WriteLine("error: outFile directory not found - " + outDir);
-            return;
+            foreach (var str in inFilesOrFolders)
+            {
+                dir = Path.GetFullPath(str);
+                if (!Directory.Exists(dir))
+                {
+                    Console.WriteLine("error: directory not found - " + dir);
+                    return;
+                }
+            }
+            processDirectories = true;
         }
 
         //check informat/outformat properly specified
@@ -61,23 +74,93 @@ class Program
         TextFormat outfmt = (TextFormat)Enum.Parse(typeof(TextFormat), outformat);
 
         //do bias correction
-        List<Point> biasedFinal = DoBiasCorrection(observed, baseline, future, infmt);
-
-        //write output
-        WriteFile(biasedFinal, outfile, outfmt);
+        if (processDirectories)
+        {
+            BiasCorrectFolders(observed, baseline, future, outfile, infmt, outfmt);
+        }
+        else
+        {
+            BiasCorrectFile(observed, baseline, future, outfile, infmt, outfmt);
+        }
     }
 
     private static void PrintUsage()
     {
-        Console.WriteLine("Usage:  BiasCorrectQ.exe  observedFile  baselineFile  futureFile  outFile  informat  outformat");
+        Console.WriteLine("Usage:  BiasCorrectQ.exe  observed  baseline  future  output  informat  outformat");
         Console.WriteLine("Where:");
-        Console.WriteLine("    observedFile - observed monthly streamflow");
-        Console.WriteLine("    baselineFile - simulated historical monthly streamflow");
-        Console.WriteLine("    futureFile - simulated future monthly streamflow");
-        Console.WriteLine("    outFile - file name for program output of bias corrected monthly streamflow");
+        Console.WriteLine("    observed - observed daily or monthly file or folder of streamflow");
+        Console.WriteLine("    baseline - simulated historical daily or monthly file or folder of streamflow");
+        Console.WriteLine("    future - simulated future daily or monthly file or folder of streamflow");
+        Console.WriteLine("    output - file name or folder for program output of bias corrected streamflow");
         Console.WriteLine("    informat/outformat - either \"vic\" or \"csv\"");
         Console.WriteLine();
-        Console.WriteLine("NOTE: If running the baseline bias correction enter \"baselineFile\" as the \"futureFile\"");
+        Console.WriteLine("NOTE: If running the baseline bias correction enter \"baseline\" as the \"future\"");
+    }
+
+    private static void BiasCorrectFile(string observedFile, string baselineFile,
+                                        string futureFile, string outFile,
+                                        TextFormat infmt, TextFormat outfmt)
+    {
+        var bc = DoBiasCorrection(observedFile, baselineFile, futureFile, infmt);
+
+        if (bc.Count == 0)
+        {
+            Console.WriteLine("error computing bias corrected flow for:");
+            Console.WriteLine("  observed: " + observedFile);
+            Console.WriteLine("  baseline: " + baselineFile);
+            Console.WriteLine("  future: " + futureFile);
+        }
+        else
+        {
+            //write output
+            WriteFile(bc, outFile, outfmt);
+        }
+    }
+
+    private static void BiasCorrectFolders(string obsDir, string simDir,
+                                           string futDir, string outDir,
+                                           TextFormat infmt, TextFormat outfmt)
+    {
+        var fut_files = Directory.GetFiles(futDir).ToList();
+
+        for (int i = 0; i < fut_files.Count; i++)
+        {
+            var fut_file = fut_files[i];
+            var obs_file = GetMatchingFile(fut_file, obsDir);
+            var sim_file = GetMatchingFile(fut_file, simDir);
+            var out_file = Path.Combine(outDir, Path.GetFileName(fut_file) + ".bc");
+
+            BiasCorrectFile(obs_file, sim_file, fut_file, out_file, infmt, outfmt);
+        }
+    }
+
+    private static string GetMatchingFile(string file, string dir)
+    {
+        var list_files = Directory.GetFiles(dir).ToList();
+
+        //assume files contain name of future file without the extension
+        string pattern = Path.GetFileNameWithoutExtension(file);
+
+        //search for pattern in list_files
+        var files = list_files.Where(s => s.Contains(pattern)).ToList();
+        if (files.Count != 1)
+        {
+            if (files.Count == 0)
+            {
+                Console.WriteLine(
+                    string.Format("error: no matching file for pattern ({0}) in directory - {1}",
+                                  pattern, dir));
+            }
+            else
+            {
+                Console.WriteLine(
+                    string.Format("error: multiple files match pattern ({0}) in directory - {1}",
+                                  pattern, dir));
+            }
+            return string.Empty;
+        }
+
+        return files[0];
     }
 
     internal static List<Point> DoBiasCorrection(string observedFile,
@@ -89,7 +172,7 @@ class Program
         List<Point> future = GetInputData(futureFile, infmt);
         if (observed.Count == 0 || baseline.Count == 0 || future.Count == 0)
         {
-            Console.WriteLine("error parsing input files");
+            Console.WriteLine("error parsing input file(s)");
             return new List<Point> { };
         }
 
@@ -124,16 +207,6 @@ class Program
             List<Point> biasedDaily = AdjDailyToMonthly(future, biasedFinal);
             AdjMonthlyBoundary(biasedDaily);
             biasedFinal = AdjDailyToMonthly(biasedDaily, biasedFinal);
-        }
-
-        //check bias correction was successful
-        if (biasedFinal.Count == 0)
-        {
-            Console.WriteLine("error computing bias corrected flow for:");
-            Console.WriteLine("  observed: " + observedFile);
-            Console.WriteLine("  baseline: " + baselineFile);
-            Console.WriteLine("  future: " + futureFile);
-            return new List<Point> { };
         }
 
         return biasedFinal;
@@ -461,6 +534,14 @@ class Program
     private static void WriteFile(List<Point> sim_new, string filename,
                                   TextFormat fmt)
     {
+        //make sure directory to filename exists
+        string outdir = Path.GetDirectoryName(Path.GetFullPath(filename));
+        if (!Directory.Exists(outdir))
+        {
+            Directory.CreateDirectory(outdir);
+        }
+
+        //fill lines with sim new data
         string[] lines = new string[sim_new.Count];
         for (int i = 0; i < sim_new.Count; i++)
         {
@@ -482,6 +563,8 @@ class Program
                 lines[i] = string.Format("{0},{1:0.000}", pt.Date, pt.Value);
             }
         }
+
+        //write file
         File.WriteAllLines(filename, lines);
     }
 
