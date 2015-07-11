@@ -3,7 +3,7 @@
 
 ## BiasCorrectQ
 ### Streamflow bias correction
-This code can be used to adjust daily simulated streamflow to be consistent with monthly to annual aspects of observed streamflow.
+This code can be used to adjust daily or monthly simulated streamflow to be consistent with monthly to annual aspects of observed streamflow.
 
 The methods follow those outlined in Snover et al. (2003):
 http://www.hydro.washington.edu/Lettenmaier/permanent_archive/hamleaf/bams_paper/technical_documentation.pdf
@@ -14,10 +14,10 @@ This is a Console Application, it is run from a Windows Command Prompt (cmd.exe)
 <pre>C:\>BiasCorrectQ.exe  observed  baseline  future  output  informat  outformat</pre>
 
 Where:
-* observedFile - observed daily or monthly file or folder of streamflow
-* baselineFile - simulated historical daily or monthly file or folder of streamflow
-* futureFile - simulated future daily or monthly file or folder of streamflow
-* outFile - file name or folder for program output of bias corrected streamflow
+* observed - observed daily or monthly file or folder of streamflow
+* baseline - simulated historical daily or monthly file or folder of streamflow
+* future - simulated future daily or monthly file or folder of streamflow
+* output - file name or folder for program output of bias corrected streamflow
 * informat/outformat - either "vic" or "csv", text file format is routed streamflow from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv)
 
 **NOTE:**
