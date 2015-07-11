@@ -18,7 +18,7 @@ Where:
 * baseline - simulated historical daily or monthly file or folder of streamflow
 * future - simulated future daily or monthly file or folder of streamflow
 * output - file name or folder for program output of bias corrected streamflow
-* informat/outformat - either "vic" or "csv", text file format is routed streamflow from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-seperated (csv)
+* informat/outformat - either "vic" or "csv", text file format is routed streamflow from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-separated (csv)
 
 **NOTE:**
 * If running the baseline bias correction enter "baseline" as the "future". 
