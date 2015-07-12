@@ -101,6 +101,8 @@ class Program
                                         string futureFile, string outFile,
                                         TextFormat infmt, TextFormat outfmt)
     {
+        Console.WriteLine("bias correcting... " + futureFile);
+
         var bc = DoBiasCorrection(observedFile, baselineFile, futureFile, infmt);
 
         if (bc.Count == 0)
@@ -121,6 +123,8 @@ class Program
                                            string futDir, string outDir,
                                            TextFormat infmt, TextFormat outfmt)
     {
+        Console.WriteLine("\nbias correcting files in folder... " + futDir + "\n");
+
         var fut_files = Directory.GetFiles(futDir).ToList();
 
         for (int i = 0; i < fut_files.Count; i++)
@@ -130,7 +134,10 @@ class Program
             var sim_file = GetMatchingFile(fut_file, simDir);
             var out_file = Path.Combine(outDir, Path.GetFileName(fut_file) + ".bc");
 
-            BiasCorrectFile(obs_file, sim_file, fut_file, out_file, infmt, outfmt);
+            if (!string.IsNullOrEmpty(obs_file) && !string.IsNullOrEmpty(sim_file))
+            {
+                BiasCorrectFile(obs_file, sim_file, fut_file, out_file, infmt, outfmt);
+            }
         }
     }
 
