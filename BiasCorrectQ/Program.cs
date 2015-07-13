@@ -567,7 +567,7 @@ class Program
             }
             if (fmt == TextFormat.csv)
             {
-                lines[i] = string.Format("{0},{1:0.000}", pt.Date, pt.Value);
+                lines[i] = string.Format("{0:M/d/yyyy},{1:0.000}", pt.Date, pt.Value);
             }
         }
 
