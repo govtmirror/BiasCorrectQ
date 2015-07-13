@@ -45,7 +45,7 @@ static class Utils
 
     internal static List<double> GetWYAnnualAverages(List<Point> flow)
     {
-        var annualData = GetWYAnnualData(flow, true);
+        var annualData = GetWYAnnualData(flow);
 
         // get average for each year
         var values = new List<double> { };
@@ -58,22 +58,7 @@ static class Utils
         return values;
     }
 
-    internal static List<double> GetWYAnnualVolumes(List<Point> flow)
-    {
-        var annualData = GetWYAnnualData(flow, false);
-
-        // get sum for each year
-        var values = new List<double> { };
-        foreach (var item in annualData)
-        {
-            values.Add(item.Value.Sum());
-        }
-
-        return values;
-    }
-
-    private static Dictionary<int, List<double>> GetWYAnnualData(List<Point> flow,
-            bool cfs_days)
+    private static Dictionary<int, List<double>> GetWYAnnualData(List<Point> flow)
     {
         int startWY = flow[0].Date.Year + 1;
         int endWY = flow[flow.Count - 1].Date.Year;
@@ -90,11 +75,7 @@ static class Utils
             int month = pt.Date.Month;
             int year = pt.Date.Year;
 
-            double value = pt.Value;
-            if (cfs_days)
-            {
-                value *= DateTime.DaysInMonth(year, month);
-            }
+            double value = pt.Value * DateTime.DaysInMonth(year, month);
 
             if (month > 9)
             {
@@ -165,23 +146,6 @@ static class Utils
                 break;
             }
         }
-    }
-
-    internal static List<Point> GetMonthlyAverages(List<Point> future)
-    {
-        if (IsDataMonthly(future))
-        {
-            return future;
-        }
-
-        var rval = new List<Point> { };
-        foreach (var pt in future)
-        {
-            var values = new List<double> { };
-
-        }
-
-        return rval;
     }
 
     internal static int ValueIndex(double value, List<double> list)
