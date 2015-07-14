@@ -501,6 +501,13 @@ class Program
                 return new List<Point> { };
             }
 
+            if (val < 0)
+            {
+                Console.WriteLine("error: data contains negative values that" +
+                                  " are incompatible with fitting of log normal distribution");
+                return new List<Point> { };
+            }
+
             Point pt = new Point(dt, val);
             rval.Add(pt);
         }
@@ -528,6 +535,13 @@ class Program
             if (!double.TryParse(line[1], out val))
             {
                 Console.WriteLine("error parsing value at row: " + (i + 1));
+                return new List<Point> { };
+            }
+
+            if (val < 0)
+            {
+                Console.WriteLine("error: data contains negative values that" +
+                                  " are incompatible with fitting of log normal distribution");
                 return new List<Point> { };
             }
 

@@ -49,11 +49,15 @@ class LNFit
         for (int i = 0; i < values.Count; i++)
         {
             double val = values[i];
-            double log_val = Math.Log(val);
-            sum[0] += log_val;
-            sum[1] += log_val * log_val;
-            sum[2] += val;
-            sum[3] += val * val;
+
+            if (val > 0)
+            {
+                double log_val = Math.Log(val);
+                sum[0] += log_val;
+                sum[1] += log_val * log_val;
+                sum[2] += val;
+                sum[3] += val * val;
+            }
         }
 
         double nvals = values.Count;
