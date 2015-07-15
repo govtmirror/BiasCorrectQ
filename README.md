@@ -14,9 +14,9 @@ This is a Console Application, it is run from a Windows Command Prompt (cmd.exe)
 <pre>C:\>BiasCorrectQ.exe  observed  baseline  future  output  informat  outformat</pre>
 
 Where:
-* observed - observed daily or monthly file or folder of streamflow
-* baseline - simulated historical daily or monthly file or folder of streamflow
-* future - simulated future daily or monthly file or folder of streamflow
+* observed - observed streamflow by file or folder (daily or monthly timestep)
+* baseline - simulated historical streamflow by file or folder (daily or monthly timestep)
+* future - simulated future streamflow by file or folder (daily or monthly timestep)
 * output - file name or folder for program output of bias corrected streamflow
 * informat/outformat - either "vic" or "csv", text file format is routed streamflow from [VIC](http://www.hydro.washington.edu/Lettenmaier/Models/VIC/index.shtml) (vic) or comma-separated (csv)
 
@@ -25,9 +25,4 @@ Where:
 * The inputs *must* be all files or all folders not a combination.
 * If folders are specified the program assumes the simulated future file name *without the extension* is part of the observed and baseline file names.
 * Given monthly future file(s) the bias corrected streamflow will be monthly, likewise given daily future file(s) the bias corrected streamflow will be daily.
-
-### TO-DO
-* ~~Extend the methods to bias correct future streamflow at equal monthly timesteps and periods of record.~~
-* ~~Extend the methods to handle different periods of record at a monthly timestep.~~
-* ~~Extend the methods to adjust daily simulated streamflow.~~
-* ~~Modify code to allow input arguments to be files or folders. If folders are specified, the code would then process all files in the folders. This will require the user to have some consistent naming convention between files in the folders. Also modify the code to specify an output directory.~~
+* Streamflow is assumed to be an average flow rate (e.g., ft<sup>3</sup>/s or m<sup>3</sup>/s) NOT a volume (e.g., acre-feet or m<sup>3</sup>).
