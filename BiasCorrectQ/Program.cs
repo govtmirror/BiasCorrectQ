@@ -88,11 +88,11 @@ class Program
     {
         Console.WriteLine("Usage:  BiasCorrectQ.exe  observed  baseline  future  output  informat  outformat");
         Console.WriteLine("Where:");
-        Console.WriteLine("    observed - observed daily or monthly file or folder of streamflow");
-        Console.WriteLine("    baseline - simulated historical daily or monthly file or folder of streamflow");
-        Console.WriteLine("    future - simulated future daily or monthly file or folder of streamflow");
+        Console.WriteLine("    observed - observed streamflow by file or folder (daily or monthly timestep)");
+        Console.WriteLine("    baseline - simulated historical streamflow by file or folder (daily or monthly timestep)");
+        Console.WriteLine("    future - simulated future streamflow by file or folder (daily or monthly timestep)");
         Console.WriteLine("    output - file name or folder for program output of bias corrected streamflow");
-        Console.WriteLine("    informat/outformat - either \"vic\" or \"csv\"");
+        Console.WriteLine("    informat/outformat - either \"vic\" or \"csv\" text file format is routed streamflow from VIC (vic) or comma-separated (csv)");
         Console.WriteLine();
         Console.WriteLine("NOTE: If running the baseline bias correction enter \"baseline\" as the \"future\"");
     }
