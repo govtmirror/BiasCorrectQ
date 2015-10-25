@@ -288,7 +288,7 @@ class Program
         List<double> sim_annual = AnnualBiasCorrection(obs, sim, fut);
 
         Dictionary<int, double> annualFactors =
-            GetAnnualFactors(sim_annual, biasedMonthly, obs[0].Date.Year + 1);
+            GetAnnualFactors(sim_annual, biasedMonthly);
 
         var rval = new List<Point> { };
         foreach (Point pt in biasedMonthly)
@@ -334,11 +334,13 @@ class Program
     /// <returns></returns>
     private static Dictionary<int, double> GetAnnualFactors(
         List<double> biasedAnnual,
-        List<Point> biasedMonthly, int startYear)
+        List<Point> biasedMonthly)
     {
+        var rval = new Dictionary<int, double> { };
+
         List<double> biasedMonthlyAnnual = Utils.GetWYAnnualAverages(biasedMonthly);
 
-        var rval = new Dictionary<int, double> { };
+        int startYear = biasedMonthly[0].Date.Year + 1;
         for (int i = 0; i < biasedAnnual.Count; i++)
         {
             rval.Add(startYear + i, biasedAnnual[i] / biasedMonthlyAnnual[i]);
