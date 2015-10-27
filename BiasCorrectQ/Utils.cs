@@ -34,8 +34,7 @@ static class Utils
              *     q = (i − 0.4) / (n + 0.2)
              * where q is the estimated quantile (or probability of exceedance)
              * for the data value of rank position i (rank position 1 is the highest value),
-             * for a total sample size of n
-             */
+             * for a total sample size of n */
             rval.Add((count - 0.4) / (vals.Count + 0.2));
             count++;
         }
@@ -148,6 +147,36 @@ static class Utils
         }
     }
 
+    internal static void TruncateToObs(List<Point> obs, ref List<Point> data)
+    {
+        //truncate beginning of data until observed start date matches data
+        foreach (var pt in data.ToList())
+        {
+            if (pt.Date < obs.First().Date)
+            {
+                data.Remove(pt);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        //truncate end of data until observed end date matches data
+        for (int i = data.Count - 1; i >= 0; i--)
+        {
+            var pt = data[i];
+            if (pt.Date > obs.Last().Date)
+            {
+                data.Remove(pt);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
     internal static int ValueIndex(double value, List<double> list)
     {
         bool listAscending = (list.Last() > list.First());
@@ -176,10 +205,8 @@ static class Utils
 
     internal static bool IsDataMonthly(List<Point> data)
     {
-        /*
-         * pretty primitive check, if someone has a better method feel free
-         * to modify this
-         */
+        /* pretty primitive check, if someone has a better method feel free
+         * to modify this */
         var d1 = data[0].Date;
         var d2 = data[1].Date;
         if (d2 == d1.AddMonths(1))
@@ -191,10 +218,8 @@ static class Utils
 
     internal static bool IsDataDaily(List<Point> data)
     {
-        /*
-         * pretty primitive check, if someone has a better method feel free
-         * to modify this
-         */
+        /* pretty primitive check, if someone has a better method feel free
+         * to modify this */
         var d1 = data[0].Date;
         var d2 = data[1].Date;
         if (d2 == d1.AddDays(1))

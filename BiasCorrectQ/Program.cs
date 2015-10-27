@@ -195,12 +195,13 @@ class Program
         }
 
         //truncate inputs to water year data
-        Utils.TruncateToWYs(observed);
-        Utils.TruncateToWYs(baseline);
-        Utils.TruncateToWYs(future);
         Utils.TruncateToWYs(observedMonthly);
         Utils.TruncateToWYs(baselineMonthly);
         Utils.TruncateToWYs(futureMonthly);
+        Utils.TruncateToWYs(future);
+
+        //truncate baseline to observed record for proper quantile lookup
+        Utils.TruncateToObs(observedMonthly, ref baselineMonthly);
 
         //do monthly bias correction
         List<Point> biasedMonthly = DoMonthlyBiasCorrection(observedMonthly,
@@ -221,10 +222,8 @@ class Program
 
     private static void AdjMonthlyBoundary(List<Point> biasedFinal)
     {
-        /*
-         * note: loop over (biasedFinal.Count - 1) is intentional to ignore
-         * the last value in the list
-         */
+        /* note: loop over (biasedFinal.Count - 1) is intentional to ignore
+         * the last value in the list */
         for (int i = 0; i < biasedFinal.Count - 1; i++)
         {
             var pt = biasedFinal[i];
@@ -593,10 +592,8 @@ class Program
 
     private static List<Point> DataToMonthly(List<Point> data)
     {
-        /*
-         * if data is monthly return data, if data is daily process
-         * data, otherwise print error message and get out of here
-         */
+        /* if data is monthly return data, if data is daily process
+         * data, otherwise print error message and get out of here */
         if (Utils.IsDataMonthly(data))
         {
             return data;
