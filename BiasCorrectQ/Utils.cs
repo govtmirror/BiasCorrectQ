@@ -147,32 +147,72 @@ static class Utils
         }
     }
 
-    internal static void TruncateToObs(List<Point> obs, ref List<Point> data)
+    internal static void AlignPeriods(List<Point> obs, List<Point> data)
     {
-        //truncate beginning of data until observed start date matches data
-        foreach (var pt in data.ToList())
+        //align beginning of data so start dates match
+        if (obs.First().Date < data.First().Date)
         {
-            if (pt.Date < obs.First().Date)
+            //truncate obs to data
+            foreach (var pt in obs.ToList())
             {
-                data.Remove(pt);
-            }
-            else
-            {
-                break;
+                if (pt.Date < data.First().Date)
+                {
+                    obs.Remove(pt);
+                }
+                else
+                {
+                    break;
+                }
             }
         }
-
-        //truncate end of data until observed end date matches data
-        for (int i = data.Count - 1; i >= 0; i--)
+        else
         {
-            var pt = data[i];
-            if (pt.Date > obs.Last().Date)
+            //truncate data to obs
+            foreach (var pt in data.ToList())
             {
-                data.Remove(pt);
+                if (pt.Date < obs.First().Date)
+                {
+                    data.Remove(pt);
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
+        }
+        
+
+        //align end of data so end dates match
+        if (obs.Last().Date > data.Last().Date)
+        {
+            //truncate obs to data
+            for (int i = obs.Count - 1; i >= 0; i--)
             {
-                break;
+                var pt = data[i];
+                if (pt.Date > data.Last().Date)
+                {
+                    obs.Remove(pt);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            //truncate data to obs
+            for (int i = data.Count - 1; i >= 0; i--)
+            {
+                var pt = data[i];
+                if (pt.Date > obs.Last().Date)
+                {
+                    data.Remove(pt);
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }

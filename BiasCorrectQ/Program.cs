@@ -200,8 +200,8 @@ class Program
         Utils.TruncateToWYs(futureMonthly);
         Utils.TruncateToWYs(future);
 
-        //truncate baseline to observed record for proper quantile lookup
-        Utils.TruncateToObs(observedMonthly, ref baselineMonthly);
+        //align baseline and observed records for proper quantile lookup
+        Utils.AlignPeriods(observedMonthly, baselineMonthly);
 
         //do monthly bias correction
         List<Point> biasedMonthly = DoMonthlyBiasCorrection(observedMonthly,
