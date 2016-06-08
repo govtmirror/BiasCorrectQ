@@ -276,7 +276,14 @@ class Program
 
             DateTime key = new DateTime(bcPt.Date.Year, bcPt.Date.Month, 1);
 
-            rval.Add(key, bcPt.Value / futPt.Value);
+            if (futPt.Value <= 0)
+            {
+                rval.Add(key, 0);
+            }
+            else
+            {
+                rval.Add(key, bcPt.Value / futPt.Value);
+            }
         }
         return rval;
     }
