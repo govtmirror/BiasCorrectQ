@@ -188,7 +188,7 @@ static class Utils
             //truncate obs to data
             for (int i = obs.Count - 1; i >= 0; i--)
             {
-                var pt = data[i];
+                var pt = obs[i];
                 if (pt.Date > data.Last().Date)
                 {
                     obs.Remove(pt);
